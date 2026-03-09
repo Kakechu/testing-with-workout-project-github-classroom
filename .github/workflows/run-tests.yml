@@ -3,7 +3,7 @@ name: CI - Tests must pass
 on:
   pull_request:
     branches:
-    - main
+      - main
 
   workflow_dispatch:
 
