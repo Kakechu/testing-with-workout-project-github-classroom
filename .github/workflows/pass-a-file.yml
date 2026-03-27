@@ -8,9 +8,19 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    outputs:
+      message: ${{ steps.set-outputs.outputs.message }}
+      filename: ${{ steps.set-outputs.outputs.filename }}
+
     steps:
       - name: Create a file
         run: echo "File contents from job 1" > from-another-job.txt
+
+      - name: Set outputs
+        id: set-outputs
+        run: |
+          echo "message=Hello from job 1" >> "$GITHUB_OUTPUT"
+          echo "filename=from-another-job.txt" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -23,10 +33,15 @@ jobs:
     needs: save-file-as-artifact
     runs-on: ubuntu-latest
     steps:
+      - name: Show outputs from first job
+        run: |
+          echo "Message from job1: ${{ needs.save-file-as-artifact.outputs.message }}"
+          echo "Filename from job1: ${{ needs.save-file-as-artifact.outputs.filename }}"
+
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: shared-file
   
       - name: Use the file
-        run: cat from-another-job.txt
+        run: cat "${{ needs.save-file-as-artifact.outputs.filename }}"
