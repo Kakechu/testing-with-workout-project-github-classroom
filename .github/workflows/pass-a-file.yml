@@ -8,20 +8,25 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    # Expose simple values (message and filename) from this job
+    # so that later jobs can read them via the `needs` context.
     outputs:
       message: ${{ steps.set-outputs.outputs.message }}
       filename: ${{ steps.set-outputs.outputs.filename }}
 
     steps:
+      # Create the file that will be passed to the next job.
       - name: Create a file
         run: echo "File contents from job 1" > from-another-job.txt
 
+      # Set job-level outputs using $GITHUB_OUTPUT (value passing requirement).
       - name: Set outputs
         id: set-outputs
         run: |
           echo "message=Hello from job 1" >> "$GITHUB_OUTPUT"
           echo "filename=from-another-job.txt" >> "$GITHUB_OUTPUT"
 
+      # Upload the file as an artifact so another job can download it.
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -30,18 +35,22 @@ jobs:
 
 
   job2:
+    # This job depends on the first one and can access its outputs.
     needs: save-file-as-artifact
     runs-on: ubuntu-latest
     steps:
+      # Demonstrates passing simple values via job outputs + needs.
       - name: Show outputs from first job
         run: |
           echo "Message from job1: ${{ needs.save-file-as-artifact.outputs.message }}"
           echo "Filename from job1: ${{ needs.save-file-as-artifact.outputs.filename }}"
 
+      # Download the artifact (the actual file) created in the first job.
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
           name: shared-file
   
+      # Use the file whose name was passed via job outputs + needs.
       - name: Use the file
         run: cat "${{ needs.save-file-as-artifact.outputs.filename }}"
